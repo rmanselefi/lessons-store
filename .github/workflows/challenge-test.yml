@@ -288,6 +288,7 @@ jobs:
           echo ${{ steps.fetch-token.outputs.token }} > .githubtoken
           gh auth login --with-token < .githubtoken
           rm .githubtoken
+          gh label create automerge --force
           gh pr edit ${{ github.event.pull_request.number }} --add-label "automerge"
 
       - name: Merge PR
