@@ -34,6 +34,7 @@ const Lessons = () => {
   const [sessions, setSessions] = useState([]); //info about available sessions
   const [selected, setSelected] = useState(-1); //index of selected session
   const [details, setDetails] = useState(""); //details about selected session
+  const [lessonTime, setLessonTime] = useState("")
 
   //toggle selected session
   const toggleItem = (index) => {
@@ -44,6 +45,7 @@ const Lessons = () => {
     items[index].selected = "selected";
     setSelected(index);
     setSessions(items);
+    setLessonTime(items[index].title)
     setDetails(
       `You have requested a lesson for ${items[index].title} \n Please complete this form to reserve your lesson.`
     );
@@ -70,7 +72,7 @@ const Lessons = () => {
       {
         //Component to process user info for registration.
       }
-      <RegistrationForm selected={selected} details={details} />
+      <RegistrationForm selected={selected} details={details} lessonTime={lessonTime} />
       <div className="lesson-title" id="title">
         <h2>Guitar lessons</h2>
       </div>

@@ -1,31 +1,30 @@
 /* eslint-disable no-console */
-const express = require('express');
+const express = require("express");
 
 const app = express();
-const { resolve } = require('path');
+const { resolve } = require("path");
 // Replace if using a different env file or config
-require('dotenv').config({ path: './.env' });
+require("dotenv").config({ path: "./.env" });
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
+const cors = require("cors");
+const { v4: uuidv4 } = require("uuid");
 
 const allitems = {};
-const fs = require('fs');
+const fs = require("fs");
+const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
 
 app.use(express.static(process.env.STATIC_DIR));
 
 app.use(
-  express.json(
-    {
-      // Should use middleware or a function to compute it only when
-      // hitting the Stripe webhook endpoint.
-      verify: (req, res, buf) => {
-        if (req.originalUrl.startsWith('/webhook')) {
-          req.rawBody = buf.toString();
-        }
-      },
+  express.json({
+    // Should use middleware or a function to compute it only when
+    // hitting the Stripe webhook endpoint.
+    verify: (req, res, buf) => {
+      if (req.originalUrl.startsWith("/webhook")) {
+        req.rawBody = buf.toString();
+      }
     },
-  ),
+  })
 );
 app.use(cors({ origin: true }));
 
@@ -37,14 +36,100 @@ app.post("/webhook", async (req, res) => {
   // TODO: Integrate Stripe
 });
 
+app.post("/lessons", async (req, res) => {
+  const { email, name, first_lesson } = req.body;
+
+  const existingCustomers = await stripe.customers.list({ email });
+
+  if (existingCustomers.data.length) {
+    return res.json({
+      exists: true,
+      customerId: existingCustomers.data[0].id,
+      customerEmail: existingCustomers.data[0].email,
+    });
+  }
+  // Create customer
+  const customer = await stripe.customers.create({
+    email,
+    name,
+    metadata: {
+      first_lesson,
+    },
+  });
+
+  // Create setup intent
+
+  const setupIntent = await stripe.setupIntents.create({
+    customer: customer.id,
+  });
+  return res.json({
+    clientSecret: setupIntent.client_secret,
+    customerId: customer.id,
+  });
+});
+
+app.get("/last4", async (req, res) => {
+  const { pm_id } = req.query;
+  const pm = await stripe.paymentMethods.retrieve(pm_id);
+  return res.json({
+    last4: pm.card.last4,
+  });
+});
+
+
+app.post('/save-payment-method', async (req, res) => {
+  try {
+    const { paymentMethodId, email, name } = req.body;
+
+    // Create or retrieve the customer with the email and name
+    const customers = await stripe.customers.list({ email: email, limit: 1 });
+    let customer;
+
+    if (customers.data.length) {
+      customer = customers.data[0];
+    } else {
+      customer = await stripe.customers.create({
+        email: email,
+        name: name
+      });
+    }
+
+    // Attach the payment method to the customer
+    await stripe.paymentMethods.attach(paymentMethodId, {
+      customer: customer.id,
+    });
+
+    // Optional: Update the payment method's billing details if they are not set correctly from the frontend
+    await stripe.paymentMethods.update(paymentMethodId, {
+      billing_details: {
+        name: name,
+        email: email
+      }
+    });
+
+    // Set it as the default payment method
+    await stripe.customers.update(customer.id, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+
+    res.send({ status: 'success' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ status: 'error', message: error.message });
+  }
+});
+
+
 // Routes
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   try {
     const path = resolve(`${process.env.STATIC_DIR}/index.html`);
     if (!fs.existsSync(path)) throw Error();
     res.sendFile(path);
   } catch (error) {
-    const path = resolve('./public/static-file-error.html');
+    const path = resolve("./public/static-file-error.html");
     res.sendFile(path);
   }
 });
@@ -60,17 +145,20 @@ app.get('/', (req, res) => {
 //   }
 app.get("/config", (req, res) => {
   // TODO: Integrate Stripe
+  res.json({
+    key: publishableKey,
+  });
 });
 
 // Milestone 1: Signing up
 // Shows the lesson sign up page.
-app.get('/lessons', (req, res) => {
+app.get("/lessons", (req, res) => {
   try {
     const path = resolve(`${process.env.STATIC_DIR}/lessons.html`);
     if (!fs.existsSync(path)) throw Error();
     res.sendFile(path);
   } catch (error) {
-    const path = resolve('./public/static-file-error.html');
+    const path = resolve("./public/static-file-error.html");
     res.sendFile(path);
   }
 });
@@ -108,7 +196,6 @@ app.get('/lessons', (req, res) => {
 app.post("/schedule-lesson", async (req, res) => {
   // TODO: Integrate Stripe
 });
-
 
 // Milestone 2: '/complete-lesson-payment'
 // Capture a payment for a lesson.
@@ -179,7 +266,7 @@ app.get("/account-update/:customer_id", async (req, res) => {
     if (!fs.existsSync(path)) throw Error();
     res.sendFile(path);
   } catch (error) {
-    const path = resolve('./public/static-file-error.html');
+    const path = resolve("./public/static-file-error.html");
     res.sendFile(path);
   }
 });
@@ -187,7 +274,6 @@ app.get("/account-update/:customer_id", async (req, res) => {
 app.get("/payment-method/:customer_id", async (req, res) => {
   // TODO: Retrieve the customer's payment method for the client
 });
-
 
 app.post("/update-payment-details/:customer_id", async (req, res) => {
   // TODO: Update the customer's payment details
@@ -230,7 +316,6 @@ app.post("/delete-account/:customer_id", async (req, res) => {
   // TODO: Integrate Stripe
 });
 
-
 // Milestone 4: '/calculate-lesson-total'
 // Returns the total amounts for payments for lessons, ignoring payments
 // for videos and concert tickets, ranging over the last 36 hours.
@@ -248,7 +333,6 @@ app.post("/delete-account/:customer_id", async (req, res) => {
 app.get("/calculate-lesson-total", async (req, res) => {
   // TODO: Integrate Stripe
 });
-
 
 // Milestone 4: '/find-customers-with-failed-payments'
 // Returns any customer who meets the following conditions:
@@ -292,4 +376,6 @@ function errorHandler(err, req, res, next) {
 
 app.use(errorHandler);
 
-app.listen(4242, () => console.log(`Node server listening on port http://localhost:${4242}`));
+app.listen(4242, () =>
+  console.log(`Node server listening on port http://localhost:${4242}`)
+);
