@@ -36,7 +36,6 @@ const CardSetupForm = (props) => {
     if (error) {
       setError(error.message);
     } else if (setupIntent && setupIntent.status === "succeeded") {
-      console.log("setupIntent===>",setupIntent);
       const pm_id = setupIntent.payment_method;
       const res = await fetch(`http://localhost:4242/last4?pm_id=${pm_id}`)
       const response = await res.json()
