@@ -196,12 +196,10 @@ app.post("/schedule-lesson", async (req, res) => {
   try {
     const { customer_id, amount, description } = req.body;
     const paymentIntent = await stripe.paymentIntents.create({
-      amount,
+      amount_capturable: amount,
       currency: "usd",
       customer: customer_id,
       description,
-      payment_method_types: ["card"],
-      setup_future_usage: "off_session",
       metadata: {
         type: "lessons-payment",
       },
@@ -210,12 +208,24 @@ app.post("/schedule-lesson", async (req, res) => {
       payment: paymentIntent,
     });
   } catch (error) {
-    return res.json({
+    let responseError = {
       error: {
-        code: error.code,
+        code: error.code || null,
         message: error.message,
       },
-      payment_intent_id: error.payment_intent.id,
+    };
+
+    // Handle case where no payment method is found for a customer
+    if (error.type === "StripeCardError" && error.code === "card_not_found") {
+      responseError.error.message = `no payment methods found for ${customer_id}`;
+    }
+
+    // Include the payment_intent_id if it was created but not successfully authorized
+    if (error.payment_intent && error.payment_intent.id) {
+      responseError.payment_intent_id = error.payment_intent.id;
+    }
+    return res.json({
+      error: responseError,
     });
   }
 });
