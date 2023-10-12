@@ -203,8 +203,6 @@ app.post("/schedule-lesson", async (req, res) => {
 
     const list_pm = paymentMethods.data;
 
-    
-
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: "usd",
@@ -216,22 +214,24 @@ app.post("/schedule-lesson", async (req, res) => {
         type: "lessons-payment",
       },
     });
-    const confirmedPaymentIntent = await stripe.paymentIntents.confirm(paymentIntent.id);
+    const confirmedPaymentIntent = await stripe.paymentIntents.confirm(
+      paymentIntent.id
+    );
 
     return res.json({
       payment: confirmedPaymentIntent,
     });
   } catch (error) {
     let responseError = {
-      error: {
+      
         code: error.code || null,
         message: error.message,
-      },
+      
     };
 
     // Handle case where no payment method is found for a customer
     if (error.type === "StripeCardError" && error.code === "card_not_found") {
-      responseError.error.message = `no payment methods found for ${customer_id}`;
+      responseError.message = `no payment methods found for ${customer_id}`;
     }
 
     // Include the payment_intent_id if it was created but not successfully authorized
@@ -351,10 +351,8 @@ app.post("/refund-lesson", async (req, res) => {
     });
   } catch (error) {
     return res.json({
-      error: {
-        code: error.code,
-        message: error.message,
-      },
+      code: error.code,
+      message: error.message,
     });
   }
 });
