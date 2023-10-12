@@ -292,10 +292,10 @@ app.post("/complete-lesson-payment", async (req, res) => {
     });
   } catch (error) {
     return res.json({
-      error: {
+     
         code: error.code,
         message: error.message,
-      },
+      
     });
   }
 });
