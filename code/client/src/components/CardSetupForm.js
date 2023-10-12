@@ -39,6 +39,7 @@ const CardSetupForm = (props) => {
       const pm_id = setupIntent.payment_method;
       const res = await fetch(`http://localhost:4242/last4?pm_id=${pm_id}`)
       const response = await res.json()
+      
       if (response) {
         setLast4(response.last4);
       }
