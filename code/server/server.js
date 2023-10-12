@@ -223,10 +223,8 @@ app.post("/schedule-lesson", async (req, res) => {
     });
   } catch (error) {
     let responseError = {
-      
-        code: error.code || null,
-        message: error.message,
-      
+      code: error.code || null,
+      message: error.message,
     };
 
     // Handle case where no payment method is found for a customer
@@ -292,10 +290,10 @@ app.post("/complete-lesson-payment", async (req, res) => {
     });
   } catch (error) {
     return res.json({
-     
+      error: {
         code: error.code,
         message: error.message,
-      
+      },
     });
   }
 });
@@ -351,8 +349,10 @@ app.post("/refund-lesson", async (req, res) => {
     });
   } catch (error) {
     return res.json({
-      code: error.code,
-      message: error.message,
+      error: {
+        code: error.code,
+        message: error.message,
+      },
     });
   }
 });
