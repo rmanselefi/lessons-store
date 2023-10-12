@@ -76,8 +76,7 @@ app.get("/last4", async (req, res) => {
   });
 });
 
-
-app.post('/save-payment-method', async (req, res) => {
+app.post("/save-payment-method", async (req, res) => {
   try {
     const { paymentMethodId, email, name } = req.body;
 
@@ -90,7 +89,7 @@ app.post('/save-payment-method', async (req, res) => {
     } else {
       customer = await stripe.customers.create({
         email: email,
-        name: name
+        name: name,
       });
     }
 
@@ -103,8 +102,8 @@ app.post('/save-payment-method', async (req, res) => {
     await stripe.paymentMethods.update(paymentMethodId, {
       billing_details: {
         name: name,
-        email: email
-      }
+        email: email,
+      },
     });
 
     // Set it as the default payment method
@@ -114,13 +113,12 @@ app.post('/save-payment-method', async (req, res) => {
       },
     });
 
-    res.send({ status: 'success' });
+    res.send({ status: "success" });
   } catch (error) {
     console.error(error);
-    res.status(500).send({ status: 'error', message: error.message });
+    res.status(500).send({ status: "error", message: error.message });
   }
 });
-
 
 // Routes
 app.get("/", (req, res) => {
@@ -195,6 +193,31 @@ app.get("/lessons", (req, res) => {
 // }
 app.post("/schedule-lesson", async (req, res) => {
   // TODO: Integrate Stripe
+  try {
+    const { customer_id, amount, description } = req.body;
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: "usd",
+      customer: customer_id,
+      description,
+      payment_method_types: ["card"],
+      setup_future_usage: "off_session",
+      metadata: {
+        type: "lessons-payment",
+      },
+    });
+    return res.json({
+      payment: paymentIntent,
+    });
+  } catch (error) {
+    return res.json({
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+      payment_intent_id: error.payment_intent.id,
+    });
+  }
 });
 
 // Milestone 2: '/complete-lesson-payment'
@@ -224,6 +247,33 @@ app.post("/schedule-lesson", async (req, res) => {
 //
 app.post("/complete-lesson-payment", async (req, res) => {
   // TODO: Integrate Stripe
+  try {
+    const { payment_intent_id, amount } = req.body;
+
+    let options = {};
+
+    // If amount is provided, add it to the options object
+    if (amount) {
+      options.amount = amount; // remember to convert to cents if necessary
+    }
+
+    // Capture the payment intent
+    const paymentIntent = await stripe.paymentIntents.capture(
+      payment_intent_id,
+      options
+    );
+
+    return res.json({
+      payment: paymentIntent,
+    });
+  } catch (error) {
+    return res.json({
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    });
+  }
 });
 
 // Milestone 2: '/refund-lesson'
@@ -256,6 +306,33 @@ app.post("/complete-lesson-payment", async (req, res) => {
 //  }
 app.post("/refund-lesson", async (req, res) => {
   // TODO: Integrate Stripe
+
+  try {
+    const { payment_intent_id, amount } = req.body;
+
+    let options = {
+      payment_intent: payment_intent_id,
+    };
+
+    // If an amount is specified, add it to the options
+    if (amount) {
+      options.amount = amount; // remember to convert to cents if necessary
+    }
+
+    // Create a refund
+    const refund = await stripe.refunds.create(options);
+
+    return res.json({
+      refund: refund.id,
+    });
+  } catch (error) {
+    return res.json({
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    });
+  }
 });
 
 // Milestone 3: Managing account info
