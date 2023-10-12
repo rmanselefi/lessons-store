@@ -1,4 +1,4 @@
-import { Elements } from "@stripe/react-stripe-js";
+import { Elements, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import React, { useEffect, useState } from "react";
 import CardSetupForm from "./CardSetupForm";
@@ -23,6 +23,7 @@ const UpdateCustomer = ({
 
   // TODO: Integrate Stripe
 
+
   //Get info to load page, User payment information, config API route in package.json "proxy"
   useEffect(() => {
     setEmail(customerEmail);
@@ -33,7 +34,7 @@ const UpdateCustomer = ({
       setProcessing(false);
     }
     async function setUp() {
-      const { key } = await fetch("/config").then((res) => res.json());
+      const { key } = await fetch("http://localhost:4242/config").then((res) => res.json());
       setStripePromise(loadStripe(key));
     }
     setUp();
@@ -41,6 +42,39 @@ const UpdateCustomer = ({
 
   const handleClick = async () => {
     // TODO: Integrate Stripe
+
+    setProcessing(true);
+    
+    if (oldEmail !== email || oldName !== name) {
+      const setupIntentResponse = await fetch(
+        `http://localhost:4242/setup-intent?customer_id`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            customer_id: customerId,
+          }),
+        }
+      );
+
+      const setupIntentData = await setupIntentResponse.json();
+      console.log("setupIntentData", setupIntentData);
+      const { client_secret, error } = setupIntentData.setupIntent;
+      if (error) {
+        setError(error.message);
+      } else {
+        setStripeOptions({
+          clientSecret: client_secret,
+        });
+        setLoadPaymentElement(true);
+        setSucceeded(true);
+      }
+    }
+    else{
+      setProcessing(false);
+    }
   };
 
   return (

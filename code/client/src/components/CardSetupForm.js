@@ -27,24 +27,64 @@ const CardSetupForm = (props) => {
   const handleClick = async (e) => {
     // TODO: Integrate Stripe
     setProcessing(true);
-    const { setupIntent, error } = await stripe.confirmSetup({
-      elements,
-      setup_intent_data: { metadata: { customerId } },
-      redirect: 'if_required'
-    });
+    if (mode === "setup") {
+      const { setupIntent, error } = await stripe.confirmSetup({
+        elements,
+        setup_intent_data: { metadata: { customerId } },
+        redirect: "if_required",
+      });
 
-    if (error) {
-      setError(error.message);
-    } else if (setupIntent && setupIntent.status === "succeeded") {
+      if (error) {
+        setError(error.message);
+      } else if (setupIntent && setupIntent.status === "succeeded") {
+        const pm_id = setupIntent.payment_method;
+        const res = await fetch(`http://localhost:4242/last4?pm_id=${pm_id}`);
+        const response = await res.json();
+
+        if (response) {
+          setLast4(response.last4);
+        }
+
+        await fetch("http://localhost:4242/save-payment-method", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: learnerEmail,
+            name: learnerName,
+            paymentMethodId: pm_id,
+          }),
+        });
+
+        setPaymentSucceeded(true);
+
+        if (onSuccessfulConfirmation) {
+          onSuccessfulConfirmation(setupIntent);
+        }
+      }
+    } else if (mode === "update") {
+      const { setupIntent, error } = await stripe.confirmSetup({
+        elements,
+        setup_intent_data: { metadata: { customerId } },
+        redirect: "if_required",
+      });
       const pm_id = setupIntent.payment_method;
-      const res = await fetch(`http://localhost:4242/last4?pm_id=${pm_id}`)
-      const response = await res.json()
-      
+      const res = await fetch(`http://localhost:4242/update-payment-details/${customerId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paymentMethodId: pm_id,
+        }),
+      });
+      const response = await res.json();
       if (response) {
         setLast4(response.last4);
       }
-      
-      await fetch("http://localhost:4242/save-payment-method", {
+
+      await fetch("http://localhost:4242/account-update", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -52,16 +92,16 @@ const CardSetupForm = (props) => {
         body: JSON.stringify({
           email: learnerEmail,
           name: learnerName,
-          paymentMethodId: pm_id,
+          customer_id: customerId,
         }),
       });
-      
+
 
       setPaymentSucceeded(true);
-
       if (onSuccessfulConfirmation) {
         onSuccessfulConfirmation(setupIntent);
       }
+
     }
     setProcessing(false);
   };
@@ -103,19 +143,35 @@ const CardSetupForm = (props) => {
                 stripe && elements && (
                   <div>
                     <PaymentElement />
-                    <button
-                      disabled={processing || !stripe || !elements}
-                      id="submit"
-                      onClick={handleClick}
-                    >
-                      <span id="button-text">
-                        {processing ? (
-                          <div className="spinner" id="spinner"></div>
-                        ) : (
-                          "Pay now"
-                        )}
-                      </span>
-                    </button>
+                    {mode === "setup" ? (
+                      <button
+                        disabled={processing || !stripe || !elements}
+                        id="submit"
+                        onClick={handleClick}
+                      >
+                        <span id="button-text">
+                          {processing ? (
+                            <div className="spinner" id="spinner"></div>
+                          ) : (
+                            "Pay now"
+                          )}
+                        </span>
+                      </button>
+                    ) : (
+                      <button
+                        disabled={processing || !stripe || !elements}
+                        id="submit"
+                        onClick={handleClick}
+                      >
+                        <span id="button-text">
+                          {processing ? (
+                            <div className="spinner" id="spinner"></div>
+                          ) : (
+                            "Update Payment Details"
+                          )}
+                        </span>
+                      </button>
+                    )}
                   </div>
                 )
               }

@@ -13,7 +13,7 @@ const AccountUpdate = ({ id }) => {
     const setup = async () => {
       const result = await accountUpdate(id);
       if (result !== null) {
-        setData(result);
+        setData(result.customer);
       }
     };
     setup();

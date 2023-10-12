@@ -372,15 +372,110 @@ app.get("/account-update/:customer_id", async (req, res) => {
 
 app.get("/payment-method/:customer_id", async (req, res) => {
   // TODO: Retrieve the customer's payment method for the client
+
+  try {
+    const { customer_id } = req.params;
+
+    const customer = await stripe.customers.retrieve(customer_id);
+
+    const paymentMethods = await stripe.paymentMethods.list({
+      customer: customer_id,
+      type: "card",
+      expand: ["data.customer"],
+    });
+
+    const paymentMethod = paymentMethods.data[0];
+
+    return res.json({
+      customer: paymentMethod,
+    });
+  } catch (error) {
+    return res.json({
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    });
+  }
 });
 
 app.post("/update-payment-details/:customer_id", async (req, res) => {
   // TODO: Update the customer's payment details
+
+  try {
+    const { customer_id } = req.params;
+    const { payment_method_id } = req.body;
+
+    // Attach the payment method to the customer
+    await stripe.paymentMethods.attach(payment_method_id, {
+      customer: customer_id,
+    });
+
+    // Set the default payment method on the customer
+    await stripe.customers.update(customer_id, {
+      invoice_settings: {
+        default_payment_method: payment_method_id,
+      },
+    });
+
+    return res.json({
+      success: true,
+    });
+  } catch (error) {
+    return res.json({
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    });
+  }
 });
 
 // Handle account updates
 app.post("/account-update", async (req, res) => {
   // TODO: Handle updates to any of the customer's account details
+
+  try {
+    const { customer_id, email, name } = req.body;
+
+    // Update the customer
+    const customer = await stripe.customers.update(customer_id, {
+      email: email,
+      name: name,
+    });
+
+    return res.json({
+      customer: customer,
+    });
+  } catch (error) {
+    return res.json({
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    });
+  }
+});
+
+app.post("/setup-intent", async (req, res) => {
+  try {
+    const { customer_id } = req.body;
+
+    // Create a SetupIntent
+    const setupIntent = await stripe.setupIntents.create({
+      customer: customer_id,
+    });
+    return res.json({
+      setupIntent: setupIntent,
+    });
+  } catch (error) {
+    return res.json({
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    });
+  }
 });
 
 // Milestone 3: '/delete-account'
@@ -413,6 +508,38 @@ app.post("/account-update", async (req, res) => {
 //
 app.post("/delete-account/:customer_id", async (req, res) => {
   // TODO: Integrate Stripe
+
+  try {
+    const { customer_id } = req.params;
+
+    // Get all uncaptured payment intents for this customer
+    const paymentIntents = await stripe.paymentIntents.list({
+      customer: customer_id,
+      capture_method: "manual",
+      payment_method_types: ["card"],
+    });
+
+    // If there are any uncaptured payment intents, return them
+    if (paymentIntents.data.length > 0) {
+      return res.json({
+        uncaptured_payments: paymentIntents.data.map((pi) => pi.id),
+      });
+    }
+
+    // If there are no uncaptured payment intents, delete the customer
+    await stripe.customers.del(customer_id);
+
+    return res.json({
+      deleted: true,
+    });
+  } catch (error) {
+    return res.json({
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    });
+  }
 });
 
 // Milestone 4: '/calculate-lesson-total'

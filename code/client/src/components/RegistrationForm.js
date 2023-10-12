@@ -139,7 +139,7 @@ const RegistrationForm = (props) => {
               <span id="account_link">
                 <b>
                   <a
-                    href={`localhost:3000/account-update/${existingCustomer.customerId}`}
+                    href={`http://localhost:3000/account-update/${existingCustomer.customerId}`}
                   >
                     account update
                   </a>
