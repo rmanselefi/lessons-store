@@ -195,17 +195,31 @@ app.post("/schedule-lesson", async (req, res) => {
   // TODO: Integrate Stripe
   try {
     const { customer_id, amount, description } = req.body;
+
+    const paymentMethods = await stripe.paymentMethods.list({
+      customer: customer_id,
+      type: "card", // 'card' is for credit cards. Use 'bank_account' for bank accounts if needed.
+    });
+
+    const list_pm = paymentMethods.data;
+
+    
+
     const paymentIntent = await stripe.paymentIntents.create({
-      amount_capturable: amount,
+      amount: amount,
       currency: "usd",
       customer: customer_id,
       description,
+      payment_method: list_pm[0].id,
+      capture_method: "manual",
       metadata: {
         type: "lessons-payment",
       },
     });
+    const confirmedPaymentIntent = await stripe.paymentIntents.confirm(paymentIntent.id);
+
     return res.json({
-      payment: paymentIntent,
+      payment: confirmedPaymentIntent,
     });
   } catch (error) {
     let responseError = {
@@ -264,7 +278,7 @@ app.post("/complete-lesson-payment", async (req, res) => {
 
     // If amount is provided, add it to the options object
     if (amount) {
-      options.amount = amount; // remember to convert to cents if necessary
+      options.amount_to_capture = amount; // remember to convert to cents if necessary
     }
 
     // Capture the payment intent
