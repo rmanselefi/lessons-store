@@ -22,7 +22,7 @@ const AccountUpdate = ({ id }) => {
   const onSuccessfulConfirmation = async (customerId) => {
     const result = await accountUpdate(id);
     if (result !== null) {
-      setData(result);
+      setData(result.customer);
     }
   };
 
