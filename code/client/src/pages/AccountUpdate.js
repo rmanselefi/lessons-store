@@ -29,7 +29,7 @@ const AccountUpdate = ({ id }) => {
   return (
     <main className="main-lessons">
       <Header />
-      {data.customer ? (
+      {data && data.customer ? (
         <div>
           <div className="eco-items" id="account-information">
             {
