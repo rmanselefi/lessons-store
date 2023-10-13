@@ -69,39 +69,44 @@ const CardSetupForm = (props) => {
         setup_intent_data: { metadata: { customerId } },
         redirect: "if_required",
       });
-      const pm_id = setupIntent.payment_method;
-      const res = await fetch(`http://localhost:4242/update-payment-details/${customerId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          paymentMethodId: pm_id,
-        }),
-      });
-      const response = await res.json();
-      if (response) {
-        setLast4(response.last4);
+      if (error) {
+        setError(error.message);
+      } else if (setupIntent && setupIntent.status === "succeeded") {
+        const pm_id = setupIntent.payment_method;
+        const res = await fetch(
+          `http://localhost:4242/update-payment-details/${customerId}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              paymentMethodId: pm_id,
+            }),
+          }
+        );
+        const response = await res.json();
+        if (response) {
+          setLast4(response.last4);
+        }
+
+        await fetch("http://localhost:4242/account-update", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: learnerEmail,
+            name: learnerName,
+            customer_id: customerId,
+          }),
+        });
+
+        setPaymentSucceeded(true);
+        if (onSuccessfulConfirmation) {
+          onSuccessfulConfirmation(setupIntent);
+        }
       }
-
-      await fetch("http://localhost:4242/account-update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: learnerEmail,
-          name: learnerName,
-          customer_id: customerId,
-        }),
-      });
-
-
-      setPaymentSucceeded(true);
-      if (onSuccessfulConfirmation) {
-        onSuccessfulConfirmation(setupIntent);
-      }
-
     }
     setProcessing(false);
   };

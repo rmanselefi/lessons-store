@@ -459,7 +459,18 @@ app.post("/account-update", async (req, res) => {
 
 app.post("/setup-intent", async (req, res) => {
   try {
-    const { customer_id } = req.body;
+    const { customer_id, email } = req.body;
+
+    if (email) {
+      const existingCustomers = await stripe.customers.list({ email });
+
+      if (existingCustomers.data.length) {
+        return res.json({
+          exists: true,
+          error: "Customer email already exists",
+        });
+      }
+    }
 
     // Create a SetupIntent
     const setupIntent = await stripe.setupIntents.create({

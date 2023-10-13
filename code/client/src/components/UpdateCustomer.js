@@ -19,10 +19,10 @@ const UpdateCustomer = ({
   const [stripePromise, setStripePromise] = useState(null);
   const [stripeOptions, setStripeOptions] = useState(null);
   const [loadPaymentElement, setLoadPaymentElement] = useState(false);
+  const [existingCustomer, setExistingCustomer] = useState(null);
   const selected = 1;
 
   // TODO: Integrate Stripe
-
 
   //Get info to load page, User payment information, config API route in package.json "proxy"
   useEffect(() => {
@@ -34,7 +34,9 @@ const UpdateCustomer = ({
       setProcessing(false);
     }
     async function setUp() {
-      const { key } = await fetch("http://localhost:4242/config").then((res) => res.json());
+      const { key } = await fetch("http://localhost:4242/config").then((res) =>
+        res.json()
+      );
       setStripePromise(loadStripe(key));
     }
     setUp();
@@ -44,36 +46,37 @@ const UpdateCustomer = ({
     // TODO: Integrate Stripe
 
     setProcessing(true);
-    
-    if (oldEmail !== email || oldName !== name) {
-      const setupIntentResponse = await fetch(
-        `http://localhost:4242/setup-intent?customer_id`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            customer_id: customerId,
-          }),
-        }
-      );
 
-      const setupIntentData = await setupIntentResponse.json();
-      console.log("setupIntentData", setupIntentData);
-      const { client_secret, error } = setupIntentData.setupIntent;
-      if (error) {
-        setError(error.message);
-      } else {
-        setStripeOptions({
-          clientSecret: client_secret,
-        });
-        setLoadPaymentElement(true);
-        setSucceeded(true);
+    const setupIntentResponse = await fetch(
+      `http://localhost:4242/setup-intent?customer_id`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer_id: customerId,
+          email
+        }),
       }
-    }
-    else{
+    );
+
+    const setupIntentData = await setupIntentResponse.json();
+    if (setupIntentData && setupIntentData.exists) {
+      setError(setupIntentData.error);
       setProcessing(false);
+      return;
+    }
+    console.log("setupIntentData", setupIntentData);
+    const { client_secret, error } = setupIntentData.setupIntent;
+    if (error) {
+      setError(error.message);
+    } else {
+      setStripeOptions({
+        clientSecret: client_secret,
+      });
+      setLoadPaymentElement(true);
+      setSucceeded(true);
     }
   };
 
@@ -121,6 +124,15 @@ const UpdateCustomer = ({
               </div>
             ) : null}
           </div>
+          {
+            existingCustomer && (
+              <div className="lesson-info">
+                <div className="lesson-info">
+                Customer email already exists!
+                </div>
+              </div>
+            )
+          }
           {!loadPaymentElement && (
             <button
               id="checkout-btn"
