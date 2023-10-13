@@ -67,7 +67,6 @@ const UpdateCustomer = ({
       setProcessing(false);
       return;
     }
-    console.log("setupIntentData", setupIntentData);
     const { client_secret, error } = setupIntentData.setupIntent;
     if (error) {
       setError(error.message);

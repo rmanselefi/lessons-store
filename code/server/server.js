@@ -525,17 +525,21 @@ app.post("/delete-account/:customer_id", async (req, res) => {
 
     // Get all uncaptured payment intents for this customer
     const paymentIntents = await stripe.paymentIntents.list({
-      customer: customer_id,
-      capture_method: "manual",
-      payment_method_types: ["card"],
+      customer: customer_id
     });
-
-    // If there are any uncaptured payment intents, return them
+   
     if (paymentIntents.data.length > 0) {
-      return res.json({
-        uncaptured_payments: paymentIntents.data.map((pi) => pi.id),
-      });
+      const uncapturedIntents = paymentIntents.data.filter(pi => pi.status === 'requires_capture');
+      
+       
+      // If there are any uncaptured payment intents, return them
+      if (uncapturedIntents.length > 0) {
+        return res.json({
+          uncaptured_payments: uncapturedIntents.map((pi) => pi.id),
+        });
+      }
     }
+   
 
     // If there are no uncaptured payment intents, delete the customer
     await stripe.customers.del(customer_id);
