@@ -19,7 +19,6 @@ const UpdateCustomer = ({
   const [stripePromise, setStripePromise] = useState(null);
   const [stripeOptions, setStripeOptions] = useState(null);
   const [loadPaymentElement, setLoadPaymentElement] = useState(false);
-  const [existingCustomer, setExistingCustomer] = useState(null);
   const selected = 1;
 
   // TODO: Integrate Stripe
@@ -48,7 +47,7 @@ const UpdateCustomer = ({
     setProcessing(true);
 
     const setupIntentResponse = await fetch(
-      `http://localhost:4242/setup-intent?customer_id`,
+      `http://localhost:4242/setup-intent`,
       {
         method: "POST",
         headers: {
@@ -123,15 +122,7 @@ const UpdateCustomer = ({
               </div>
             ) : null}
           </div>
-          {
-            existingCustomer && (
-              <div className="lesson-info">
-                <div className="lesson-info">
-                Customer email already exists!
-                </div>
-              </div>
-            )
-          }
+          
           {!loadPaymentElement && (
             <button
               id="checkout-btn"

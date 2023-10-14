@@ -376,7 +376,6 @@ app.get("/payment-method/:customer_id", async (req, res) => {
   try {
     const { customer_id } = req.params;
 
-    const customer = await stripe.customers.retrieve(customer_id);
 
     const paymentMethods = await stripe.paymentMethods.list({
       customer: customer_id,
@@ -476,7 +475,7 @@ app.post("/setup-intent", async (req, res) => {
       if (existingCustomers.data.length) {
         return res.json({
           exists: true,
-          error: "Customer email already exists",
+          error: "Customer email already exists!",
         });
       }
     }
