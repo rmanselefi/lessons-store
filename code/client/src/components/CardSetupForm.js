@@ -89,18 +89,19 @@ const CardSetupForm = (props) => {
         if (response) {
           setLast4(response.last4);
         }
-
-        await fetch("http://localhost:4242/account-update", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: learnerEmail,
-            name: learnerName,
-            customer_id: customerId,
-          }),
-        });
+        if (learnerEmail !== "" && learnerName !== "") {
+          await fetch("http://localhost:4242/account-update", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: learnerEmail,
+              name: learnerName,
+              customer_id: customerId,
+            }),
+          });
+        }
 
         setPaymentSucceeded(true);
         if (onSuccessfulConfirmation) {

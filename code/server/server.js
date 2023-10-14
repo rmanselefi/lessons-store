@@ -406,6 +406,15 @@ app.post("/update-payment-details/:customer_id", async (req, res) => {
     const { customer_id } = req.params;
     const { payment_method_id } = req.body;
 
+    const paymentMethods = await stripe.customers.listPaymentMethods(
+      customer_id,
+      { type: "card" }
+    );
+    // Detach the old payment method
+    await stripe.paymentMethods.detach(
+      paymentMethods.data[0].id
+    );
+
     // Attach the payment method to the customer
     await stripe.paymentMethods.attach(payment_method_id, {
       customer: customer_id,
@@ -525,13 +534,14 @@ app.post("/delete-account/:customer_id", async (req, res) => {
 
     // Get all uncaptured payment intents for this customer
     const paymentIntents = await stripe.paymentIntents.list({
-      customer: customer_id
+      customer: customer_id,
     });
-   
+
     if (paymentIntents.data.length > 0) {
-      const uncapturedIntents = paymentIntents.data.filter(pi => pi.status === 'requires_capture');
-      
-       
+      const uncapturedIntents = paymentIntents.data.filter(
+        (pi) => pi.status === "requires_capture"
+      );
+
       // If there are any uncaptured payment intents, return them
       if (uncapturedIntents.length > 0) {
         return res.json({
@@ -539,7 +549,6 @@ app.post("/delete-account/:customer_id", async (req, res) => {
         });
       }
     }
-   
 
     // If there are no uncaptured payment intents, delete the customer
     await stripe.customers.del(customer_id);
