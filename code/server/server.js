@@ -376,7 +376,6 @@ app.get("/payment-method/:customer_id", async (req, res) => {
   try {
     const { customer_id } = req.params;
 
-
     const paymentMethods = await stripe.paymentMethods.list({
       customer: customer_id,
       type: "card",
@@ -403,19 +402,26 @@ app.post("/update-payment-details/:customer_id", async (req, res) => {
 
   try {
     const { customer_id } = req.params;
-    const { payment_method_id } = req.body;
+    const { paymentMethodId } = req.body;
 
     const paymentMethods = await stripe.customers.listPaymentMethods(
       customer_id,
       { type: "card" }
     );
-    // Detach the old payment method
-    await stripe.paymentMethods.detach(
-      paymentMethods.data[0].id
-    );
+
+    // console.log("paymejhvcgh ==== >", paymentMethods.data.length);
+    if (paymentMethods.data.length > 0) {
+      for (let index = 0; index < paymentMethods.data.length; index++) {
+        const element = array[index];
+        await stripe.paymentMethods.detach(element.id);
+      }
+    } else {
+      // Detach the old payment method
+      await stripe.paymentMethods.detach(paymentMethods.data[0].id);
+    }
 
     // Attach the payment method to the customer
-    await stripe.paymentMethods.attach(payment_method_id, {
+    await stripe.paymentMethods.attach(paymentMethodId, {
       customer: customer_id,
     });
 
@@ -467,9 +473,9 @@ app.post("/account-update", async (req, res) => {
 
 app.post("/setup-intent", async (req, res) => {
   try {
-    const { customer_id, email } = req.body;
+    const { customer_id, email, shouldValidate } = req.body;
 
-    if (email) {
+    if (email && shouldValidate) {
       const existingCustomers = await stripe.customers.list({ email });
 
       if (existingCustomers.data.length) {

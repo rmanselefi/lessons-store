@@ -45,7 +45,7 @@ const UpdateCustomer = ({
     // TODO: Integrate Stripe
 
     setProcessing(true);
-
+    
     const setupIntentResponse = await fetch(
       `http://localhost:4242/setup-intent`,
       {
@@ -55,7 +55,8 @@ const UpdateCustomer = ({
         },
         body: JSON.stringify({
           customer_id: customerId,
-          email
+          email,
+          shouldValidate: oldEmail !== email,
         }),
       }
     );
