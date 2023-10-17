@@ -10,6 +10,8 @@ const cors = require("cors");
 const { v4: uuidv4 } = require("uuid");
 
 const allitems = {};
+let globalAmount = 0;
+let fee = 0;
 let numberOfLessons = 0;
 const fs = require("fs");
 const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
@@ -37,21 +39,17 @@ app.post("/webhook", async (req, res) => {
   // TODO: Integrate Stripe
 
   try {
-    if (numberOfLessons === 0) {
-      const event = req.body;
+    const event = req.body;
 
-      // Check if the event is a 'charge.succeeded' event
-      if (event.type === "charge.succeeded") {
-        const charge = event.data.object; // Get the charge data
+    // Check if the event is a 'charge.succeeded' event
+    if (event.type === "charge.succeeded") {
+      const charge = event.data.object; // Get the charge data
 
-        const amount = charge.amount; // Get the amount in cents
-        allitems["amount"] = amount; // Assign the amount to the global variable
+      const amount = charge.amount; // Get the amount in cents
+      globalAmount = amount; // Assign the amount to the global variable
 
-        allitems["fee"] = 10;
-        
-      }
+      fee = 10;
     }
-    numberOfLessons++;
 
     res.sendStatus(200); // Respond to the webhook event with a 200 OK status
   } catch (error) {
@@ -662,11 +660,11 @@ app.get("/calculate-lesson-total", async (req, res) => {
     // processingCosts /= 100;
     // netRevenue /= 100;
 
-    console.log("allitems===>", allitems)
+    console.log("allitems===>", allitems);
     // Return the results
     return res.json({
-      payment_total: totalRevenue + (allitems["amount"] || 0),
-      fee_total: processingCosts + (allitems["fee"] || 0),
+      payment_total: totalRevenue + amount,
+      fee_total: processingCosts + fee,
       net_total: netRevenue,
     });
   } catch (error) {
