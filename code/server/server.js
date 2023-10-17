@@ -660,11 +660,11 @@ app.get("/calculate-lesson-total", async (req, res) => {
     // processingCosts /= 100;
     // netRevenue /= 100;
 
-    console.log("allitems===>", allitems);
+    
     // Return the results
     return res.json({
-      payment_total: totalRevenue + amount,
-      fee_total: processingCosts + fee,
+      payment_total: totalRevenue ,
+      fee_total: processingCosts ,
       net_total: netRevenue,
     });
   } catch (error) {
