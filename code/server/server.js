@@ -587,7 +587,7 @@ app.post("/delete-account/:customer_id", async (req, res) => {
 app.get("/calculate-lesson-total", async (req, res) => {
   // TODO: Integrate Stripe
   try {
-    let thirtySixHoursAgo = Math.floor(Date.now() / 1000 - 36 * 60 * 60);
+    let thirtySixHoursAgo = Math.floor(Date.now() / 1000 - (36 * 60 * 60));
 
     // Fetch successful payments within the last 36 hours
     let paymentResults = await stripe.paymentIntents.list({
@@ -598,6 +598,8 @@ app.get("/calculate-lesson-total", async (req, res) => {
     const successfulPaymentIntents = paymentResults.data.filter(
       (intent) => intent.status === "succeeded"
     );
+
+    console.log(successfulPaymentIntents.length);
 
     // Calculate total revenue, processing costs, and refund costs
     let totalRevenue = 0;
