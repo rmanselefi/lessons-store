@@ -46,6 +46,7 @@ app.post("/webhook", async (req, res) => {
       const charge = event.data.object; // Get the charge data
 
       const amount = charge.amount; // Get the amount in cents
+      console.log("Amount=======>: ", amount);
       globalAmount = amount; // Assign the amount to the global variable
 
       fee = 10;
@@ -648,6 +649,8 @@ app.get("/calculate-lesson-total", async (req, res) => {
     if (globalAmount > 0) {
       totalRevenue = totalRevenue + globalAmount;
     }
+
+    console.log("globalAmount ===> ", globalAmount);
     let refundResults = await stripe.refunds.list({
       created: {
         gte: thirtySixHoursAgo,
