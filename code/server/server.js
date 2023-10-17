@@ -34,6 +34,27 @@ app.use(cors({ origin: true }));
 
 app.post("/webhook", async (req, res) => {
   // TODO: Integrate Stripe
+
+  try {
+    const event = req.body;
+
+    // Check if the event is a 'charge.succeeded' event
+    if (event.type === "charge.succeeded") {
+      const charge = event.data.object; // Get the charge data
+
+      const amount = charge.amount; // Get the amount in cents
+      allitems["amount"] = amount; // Assign the amount to the global variable
+      const fee = charge.balance_transaction.fee; // Get the fee in cents
+
+      allitems["fee"] = fee;
+      console.log("Amount:", amount);
+    }
+
+    res.sendStatus(200); // Respond to the webhook event with a 200 OK status
+  } catch (error) {
+    console.error("Webhook Error:", error);
+    res.sendStatus(500); // Respond with an error status if there's an issue processing the webhook
+  }
 });
 
 app.post("/lessons", async (req, res) => {
@@ -587,32 +608,31 @@ app.post("/delete-account/:customer_id", async (req, res) => {
 app.get("/calculate-lesson-total", async (req, res) => {
   // TODO: Integrate Stripe
   try {
-    let thirtySixHoursAgo = Math.floor(Date.now() / 1000 - (36 * 60 * 60));
+    let thirtySixHoursAgo = Math.floor(Date.now() / 1000 - 36 * 60 * 60);
 
     // Fetch successful payments within the last 36 hours
-    let paymentResults = await stripe.paymentIntents.list({
+    let paymentResults = await stripe.charges.list({
       created: {
         gte: thirtySixHoursAgo,
       },
     });
-    const successfulPaymentIntents = paymentResults.data.filter(
+    const successfulCharges = paymentResults.data.filter(
       (intent) => intent.status === "succeeded"
     );
 
-    console.log(successfulPaymentIntents.length);
+    console.log(successfulCharges.length);
 
     // Calculate total revenue, processing costs, and refund costs
     let totalRevenue = 0;
     let processingCosts = 0;
     let refundCosts = 0;
 
-    for (let payment of successfulPaymentIntents) {
-      const paymentIntent = await stripe.paymentIntents.retrieve(payment.id, {
-        expand: ["latest_charge.balance_transaction"],
+    for (let payment of successfulCharges) {
+      const charge = await stripe.charges.retrieve(payment.id, {
+        expand: ["balance_transaction"],
       });
 
-      const feeDetails =
-        paymentIntent.latest_charge.balance_transaction.fee_details;
+      const feeDetails = charge.balance_transaction.fee_details;
 
       totalRevenue += payment.amount;
       processingCosts += feeDetails.reduce(
@@ -641,9 +661,9 @@ app.get("/calculate-lesson-total", async (req, res) => {
 
     // Return the results
     return res.json({
-      payment_total: totalRevenue ,
-      fee_total: processingCosts ,
-      net_total: netRevenue ,
+      payment_total: totalRevenue + (allitems["amount"] || 0),
+      fee_total: processingCosts + (allitems["fee"] || 0),
+      net_total: netRevenue,
     });
   } catch (error) {
     return res.json({
