@@ -44,13 +44,18 @@ app.post("/webhook", async (req, res) => {
 
       const amount = charge.amount; // Get the amount in cents
       allitems["amount"] = amount; // Assign the amount to the global variable
-      const fee = charge.balance_transaction.fee; // Get the fee in cents
 
+      console.log("charge:", charge);
+      const bt = charge.balance_transaction; // Get the fee in cents
+
+      const fee = stripe.balanceTransactions.retrieve(bt).fee; // Get the fee in cents
       allitems["fee"] = fee;
       console.log("Amount:", amount);
     }
 
-    res.sendStatus(200); // Respond to the webhook event with a 200 OK status
+    res.json({
+      charge
+    })  // Respond to the webhook event with a 200 OK status
   } catch (error) {
     console.error("Webhook Error:", error);
     res.sendStatus(500); // Respond with an error status if there's an issue processing the webhook
