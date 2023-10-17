@@ -49,9 +49,11 @@ app.post("/webhook", async (req, res) => {
       console.log("Amount=======>: ", amount);
       globalAmount += amount; // Assign the amount to the global variable
 
-      const bt = charge.balance_transaction
-      const txn = stripe.balanceTransactions.retrieve(bt);
-      fee += tcn.fee;
+      const bt = charge.balance_transaction;
+      if (bt != null) {
+        const txn = stripe.balanceTransactions.retrieve(bt);
+        fee += txn.fee;
+      }
     }
 
     res.sendStatus(200); // Respond to the webhook event with a 200 OK status
@@ -654,7 +656,6 @@ app.get("/calculate-lesson-total", async (req, res) => {
       totalRevenue = totalRevenue + globalAmount;
     }
 
-    
     let refundResults = await stripe.refunds.list({
       created: {
         gte: thirtySixHoursAgo,
