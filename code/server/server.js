@@ -640,23 +640,20 @@ app.get("/calculate-lesson-total", async (req, res) => {
         expand: ["balance_transaction"],
       });
 
-      const feeDetails = charge.balance_transaction.fee_details;
+      const bt = charge.balance_transaction;
 
-      totalRevenue += payment.amount;
-      processingCosts += feeDetails.reduce(
-        (total, fee) => total + fee.amount,
-        0
-      );
+      totalRevenue += bt.amount;
+      processingCosts += bt.fee
     }
 
-    if (fee > 0) {
-      processingCosts = processingCosts + fee;
-    }
-    if (globalAmount > 0) {
-      console.log("i got here");
-      console.log("globalAmount ===> ", globalAmount);
-      totalRevenue = totalRevenue + globalAmount;
-    }
+    // if (fee > 0) {
+    //   processingCosts = processingCosts + fee;
+    // }
+    // if (globalAmount > 0) {
+    //   console.log("i got here");
+    //   console.log("globalAmount ===> ", globalAmount);
+    //   totalRevenue = totalRevenue + globalAmount;
+    // }
 
     let refundResults = await stripe.refunds.list({
       created: {
