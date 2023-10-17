@@ -48,7 +48,7 @@ app.post("/webhook", async (req, res) => {
         allitems["amount"] = amount; // Assign the amount to the global variable
 
         allitems["fee"] = 10;
-        console.log("Amount:", amount);
+        
       }
     }
     numberOfLessons++;
@@ -662,6 +662,7 @@ app.get("/calculate-lesson-total", async (req, res) => {
     // processingCosts /= 100;
     // netRevenue /= 100;
 
+    console.log("allitems===>", allitems)
     // Return the results
     return res.json({
       payment_total: totalRevenue + (allitems["amount"] || 0),
