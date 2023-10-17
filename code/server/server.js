@@ -10,6 +10,7 @@ const cors = require("cors");
 const { v4: uuidv4 } = require("uuid");
 
 const allitems = {};
+const numberOfLessons = 0;
 const fs = require("fs");
 const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
 
@@ -36,20 +37,23 @@ app.post("/webhook", async (req, res) => {
   // TODO: Integrate Stripe
 
   try {
-    const event = req.body;
+    if (numberOfLessons === 0) {
+      const event = req.body;
 
-    // Check if the event is a 'charge.succeeded' event
-    if (event.type === "charge.succeeded") {
-      const charge = event.data.object; // Get the charge data
+      // Check if the event is a 'charge.succeeded' event
+      if (event.type === "charge.succeeded") {
+        const charge = event.data.object; // Get the charge data
 
-      const amount = charge.amount; // Get the amount in cents
-      allitems["amount"] = amount; // Assign the amount to the global variable
+        const amount = charge.amount; // Get the amount in cents
+        allitems["amount"] = amount; // Assign the amount to the global variable
 
-      allitems["fee"] = 10;
-      console.log("Amount:", amount);
+        allitems["fee"] = 10;
+        console.log("Amount:", amount);
+      }
     }
+    numberOfLessons++;
 
-    res.sendStatus(200) // Respond to the webhook event with a 200 OK status
+    res.sendStatus(200); // Respond to the webhook event with a 200 OK status
   } catch (error) {
     console.error("Webhook Error:", error);
     res.sendStatus(500); // Respond with an error status if there's an issue processing the webhook
