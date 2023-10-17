@@ -50,7 +50,7 @@ app.post("/webhook", async (req, res) => {
       globalAmount = amount; // Assign the amount to the global variable
 
       const bt = charge.balance_transaction;
-      console.log("bt=======>: ", bt);
+      console.log("bt=======>: ", charge);
       if (bt != null) {
         const txn = stripe.balanceTransactions.retrieve(bt);
         console.log("txn=======>: ", txn);
