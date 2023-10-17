@@ -10,7 +10,7 @@ const cors = require("cors");
 const { v4: uuidv4 } = require("uuid");
 
 const allitems = {};
-const numberOfLessons = 0;
+let numberOfLessons = 0;
 const fs = require("fs");
 const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
 
