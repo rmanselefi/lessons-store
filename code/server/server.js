@@ -647,10 +647,12 @@ app.get("/calculate-lesson-total", async (req, res) => {
       processingCosts = processingCosts + fee;
     }
     if (globalAmount > 0) {
+      console.log("i got here");
+      console.log("globalAmount ===> ", globalAmount);
       totalRevenue = totalRevenue + globalAmount;
     }
 
-    console.log("globalAmount ===> ", globalAmount);
+    
     let refundResults = await stripe.refunds.list({
       created: {
         gte: thirtySixHoursAgo,
