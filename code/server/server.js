@@ -49,7 +49,9 @@ app.post("/webhook", async (req, res) => {
       console.log("Amount=======>: ", amount);
       globalAmount += amount; // Assign the amount to the global variable
 
-      fee += 10;
+      const bt = charge.balance_transaction
+      const txn = stripe.balanceTransactions.retrieve(bt);
+      fee += tcn.fee;
     }
 
     res.sendStatus(200); // Respond to the webhook event with a 200 OK status
