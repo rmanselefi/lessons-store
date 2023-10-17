@@ -53,9 +53,7 @@ app.post("/webhook", async (req, res) => {
       console.log("Amount:", amount);
     }
 
-    res.json({
-      charge
-    })  // Respond to the webhook event with a 200 OK status
+    res.sendStatus(200) // Respond to the webhook event with a 200 OK status
   } catch (error) {
     console.error("Webhook Error:", error);
     res.sendStatus(500); // Respond with an error status if there's an issue processing the webhook
