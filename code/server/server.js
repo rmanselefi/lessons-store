@@ -409,7 +409,6 @@ app.post("/update-payment-details/:customer_id", async (req, res) => {
       { type: "card" }
     );
 
-    // console.log("paymejhvcgh ==== >", paymentMethods.data.length);
     if (paymentMethods.data.length > 0) {
       for (let index = 0; index < paymentMethods.data.length; index++) {
         const element = array[index];
@@ -587,6 +586,71 @@ app.post("/delete-account/:customer_id", async (req, res) => {
 //
 app.get("/calculate-lesson-total", async (req, res) => {
   // TODO: Integrate Stripe
+  try {
+    let thirtySixHoursAgo = Math.floor(Date.now() / 1000 - 36 * 60 * 60);
+
+    // Fetch successful payments within the last 36 hours
+    let paymentResults = await stripe.paymentIntents.list({
+      created: {
+        gte: thirtySixHoursAgo,
+      },
+    });
+    const successfulPaymentIntents = paymentResults.data.filter(
+      (intent) => intent.status === "succeeded"
+    );
+
+    // Calculate total revenue, processing costs, and refund costs
+    let totalRevenue = 0;
+    let processingCosts = 0;
+    let refundCosts = 0;
+
+    for (let payment of successfulPaymentIntents) {
+      const paymentIntent = await stripe.paymentIntents.retrieve(payment.id, {
+        expand: ["latest_charge.balance_transaction"],
+      });
+
+      const feeDetails =
+        paymentIntent.latest_charge.balance_transaction.fee_details;
+
+      totalRevenue += payment.amount;
+      processingCosts += feeDetails.reduce(
+        (total, fee) => total + fee.amount,
+        0
+      );
+    }
+
+    let refundResults = await stripe.refunds.list({
+      created: {
+        gte: thirtySixHoursAgo,
+      },
+    });
+
+    for (const refund of refundResults.data) {
+      refundCosts += refund.amount;
+    }
+
+    // Calculate net revenue
+    let netRevenue = totalRevenue - (processingCosts + refundCosts);
+
+    // Convert to cents
+    // totalRevenue = 100;
+    // processingCosts /= 100;
+    // netRevenue /= 100;
+
+    // Return the results
+    return res.json({
+      payment_total: totalRevenue ,
+      fee_total: processingCosts ,
+      net_total: netRevenue ,
+    });
+  } catch (error) {
+    return res.json({
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    });
+  }
 });
 
 // Milestone 4: '/find-customers-with-failed-payments'
@@ -623,6 +687,54 @@ app.get("/calculate-lesson-total", async (req, res) => {
 // ]
 app.get("/find-customers-with-failed-payments", async (req, res) => {
   // TODO: Integrate Stripe
+
+  try {
+    let thirtySixHoursAgo = Math.floor(Date.now() / 1000 - 36 * 60 * 60);
+    const paymentResults = await stripe.paymentIntents.list({
+      created: {
+        gte: thirtySixHoursAgo,
+      },
+      expand: [
+        "data.customer",
+        "data.last_payment_error",
+        "data.payment_method",
+      ],
+    });
+
+    const failedPayments = paymentResults.data.filter(
+      (intent) => intent.status === "requires_payment_method"
+    );
+
+    // Filter and format the data to identify customers with failed payments
+    const customersWithFailedPayments = failedPayments.map((paymentIntent) => {
+      return {
+        customer: {
+          id: paymentIntent.customer.id,
+          email: paymentIntent.customer.email,
+          name: paymentIntent.customer.name,
+        },
+        payment_intent: {
+          created: paymentIntent.created,
+          description: paymentIntent.description,
+          status: "failed",
+          error: "issuer_declined",
+        },
+        payment_method: {
+          last4: paymentIntent.last_payment_error.payment_method.card.last4,
+          brand: paymentIntent.last_payment_error.payment_method.card.brand,
+        },
+      };
+    });
+
+    res.json(customersWithFailedPayments);
+  } catch (error) {
+    return res.json({
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    });
+  }
 });
 
 function errorHandler(err, req, res, next) {
