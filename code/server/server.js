@@ -623,7 +623,7 @@ app.get("/calculate-lesson-total", async (req, res) => {
       created: {
         gte: thirtySixHoursAgo,
       },
-      limit: 100,
+      limit: 10,
     });
     const successfulCharges = paymentResults.data.filter(
       (intent) => intent.status === "succeeded"
