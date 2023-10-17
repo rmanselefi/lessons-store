@@ -45,11 +45,7 @@ app.post("/webhook", async (req, res) => {
       const amount = charge.amount; // Get the amount in cents
       allitems["amount"] = amount; // Assign the amount to the global variable
 
-      console.log("charge:", charge);
-      const bt = charge.balance_transaction; // Get the fee in cents
-
-      const fee = stripe.balanceTransactions.retrieve(bt).fee; // Get the fee in cents
-      allitems["fee"] = fee;
+      allitems["fee"] = 10;
       console.log("Amount:", amount);
     }
 
