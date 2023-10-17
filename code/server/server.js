@@ -619,7 +619,11 @@ app.get("/calculate-lesson-total", async (req, res) => {
     let thirtySixHoursAgo = Math.floor(Date.now() / 1000 - 36 * 60 * 60);
 
     // Fetch successful payments within the last 36 hours
-    let paymentResults = await getAllPayments();
+    let paymentResults = await stripe.charges.list({
+      created: {
+        gte: thirtySixHoursAgo,
+      },
+    });
     const successfulCharges = paymentResults.filter(
       (intent) => intent.status === "succeeded"
     );
