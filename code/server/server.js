@@ -647,12 +647,33 @@ app.get("/calculate-lesson-total", async (req, res) => {
       }
     }
 
+    
+    
+
+    let refundResults = await stripe.refunds.list({
+      created: {
+        gte: thirtySixHoursAgo,
+      },
+    });
+
+    for (const refund of refundResults.data) {
+      refundCosts += refund.amount;
+    }
+
+    // Calculate net revenue
+    let netRevenue = net_revenue - refundCosts;
+
+    // Convert to cents
+    // totalRevenue = 100;
+    // processingCosts /= 100;
+    // netRevenue /= 100;
+
+    // Return the results
     return res.json({
       payment_total: totalRevenue,
       fee_total: processingCosts,
-      net_total: net_revenue,
+      net_total: netRevenue,
     });
-    
   } catch (error) {
     return res.json({
       error: {
