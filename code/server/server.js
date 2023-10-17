@@ -623,12 +623,13 @@ app.get("/calculate-lesson-total", async (req, res) => {
       created: {
         gte: thirtySixHoursAgo,
       },
+      limit: 100,
     });
-    const successfulCharges = paymentResults.filter(
+    const successfulCharges = paymentResults.data.filter(
       (intent) => intent.status === "succeeded"
     );
 
-    console.log(paymentResults.length);
+    console.log(successfulCharges.length);
 
     // Calculate total revenue, processing costs, and refund costs
     let totalRevenue = 0;
@@ -642,8 +643,6 @@ app.get("/calculate-lesson-total", async (req, res) => {
       });
 
       const bt = charge.balance_transaction;
-
-      console.log(bt);
       if (bt != null) {
         totalRevenue += bt.amount;
         processingCosts += bt.fee;
@@ -652,8 +651,6 @@ app.get("/calculate-lesson-total", async (req, res) => {
     }
 
     
-    
-
     let refundResults = await stripe.refunds.list({
       created: {
         gte: thirtySixHoursAgo,
@@ -687,31 +684,6 @@ app.get("/calculate-lesson-total", async (req, res) => {
     });
   }
 });
-
-async function getAllPayments() {
-  let thirtySixHoursAgo = Math.floor(Date.now() / 1000 - 36 * 60 * 60);
-  let allPayments = [];
-  let startingAfter = null;
-
-  while (true) {
-    const charges = await stripe.charges.list({
-      created: {
-        gte: thirtySixHoursAgo,
-      },
-      limit: 100, // Adjust the limit as needed
-    });
-
-    allPayments = allPayments.concat(charges.data);
-
-    if (!charges.has_more) {
-      break; // Exit the loop if there are no more pages
-    } else {
-      startingAfter = charges.data[charges.data.length - 1].id;
-    }
-  }
-
-  return allPayments;
-}
 
 // Milestone 4: '/find-customers-with-failed-payments'
 // Returns any customer who meets the following conditions:
