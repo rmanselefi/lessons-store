@@ -47,9 +47,9 @@ app.post("/webhook", async (req, res) => {
 
       const amount = charge.amount; // Get the amount in cents
       console.log("Amount=======>: ", amount);
-      globalAmount = amount; // Assign the amount to the global variable
+      globalAmount += amount; // Assign the amount to the global variable
 
-      fee = 10;
+      fee += 10;
     }
 
     res.sendStatus(200); // Respond to the webhook event with a 200 OK status
