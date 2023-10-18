@@ -662,11 +662,7 @@ app.get("/calculate-lesson-total", async (req, res) => {
 
     // Calculate net revenue
     let netRevenue = net_revenue - refundCosts;
-    let tryouts = 0;
-    if (globalAmount != 0 && tryouts == 0) {
-      totalRevenue = totalRevenue + globalAmount;
-      tryouts++;
-    }
+    
     // Convert to cents
     // totalRevenue = 100;
     // processingCosts /= 100;
