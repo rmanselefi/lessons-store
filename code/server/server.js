@@ -662,12 +662,12 @@ app.get("/calculate-lesson-total", async (req, res) => {
 
     // Calculate net revenue
     let netRevenue = net_revenue - refundCosts;
-    
+
     // Convert to cents
     // totalRevenue = 100;
     // processingCosts /= 100;
     // netRevenue /= 100;
-
+    console.log(totalRevenue, processingCosts, netRevenue);
     // Return the results
     return res.json({
       payment_total: totalRevenue,
