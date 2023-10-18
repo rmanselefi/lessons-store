@@ -650,10 +650,6 @@ app.get("/calculate-lesson-total", async (req, res) => {
       }
     }
 
-    if(globalAmount != 0){
-      totalRevenue = totalRevenue + globalAmount;
-    }
-    
     let refundResults = await stripe.refunds.list({
       created: {
         gte: thirtySixHoursAgo,
@@ -666,7 +662,12 @@ app.get("/calculate-lesson-total", async (req, res) => {
 
     // Calculate net revenue
     let netRevenue = net_revenue - refundCosts;
-
+    let tryouts = 0;
+    if (globalAmount != 0 && tryouts == 0) {
+      totalRevenue = totalRevenue + globalAmount;
+      netRevenue = netRevenue + globalAmount;
+      tryouts++;
+    }
     // Convert to cents
     // totalRevenue = 100;
     // processingCosts /= 100;
