@@ -618,7 +618,7 @@ app.get("/calculate-lesson-total", async (req, res) => {
     // Calculate total revenue, processing costs, and refund costs
     let totalRevenue = 0;
     let processingCosts = 0;
-    let refundCosts = 0;
+
     let net_revenue = 0;
 
     for (let payment of successfulCharges) {
@@ -634,15 +634,7 @@ app.get("/calculate-lesson-total", async (req, res) => {
       }
     }
 
-    let refundResults = await stripe.refunds.list({
-      created: {
-        gte: thirtySixHoursAgo,
-      },
-    });
-
-    for (const refund of refundResults.data) {
-      refundCosts += refund.amount;
-    }
+    let refundCosts = await getRefundCostsWithinTimeRange();
 
     // Calculate net revenue
     let netRevenue = net_revenue - refundCosts;
@@ -701,6 +693,37 @@ async function getAllTransactions() {
   }
 
   return allTransactions;
+}
+
+async function getRefundCostsWithinTimeRange() {
+  try {
+    let thirtySixHoursAgo = Math.floor(Date.now() / 1000 - 36 * 60 * 60);
+    // List all refunds within the specified time range
+    const refunds = await stripe.refunds.list({
+      created: {
+        gte: thirtySixHoursAgo,
+      },
+      limit: 100, // Adjust the limit as needed
+    });
+
+    // Calculate the total refund costs (fees)
+    let totalRefundCosts = 0;
+
+    for (const refund of refunds.data) {
+      // Retrieve the balance transaction associated with the refund
+      const balanceTransaction = await stripe.balanceTransactions.retrieve(
+        refund.balance_transaction
+      );
+
+      // Add the refund fee (cost) to the total
+      totalRefundCosts += balanceTransaction.fee; // Refund fee is in cents
+    }
+
+    return totalRefundCosts;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
 }
 
 // Milestone 4: '/find-customers-with-failed-payments'
