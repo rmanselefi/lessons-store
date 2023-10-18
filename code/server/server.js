@@ -650,6 +650,9 @@ app.get("/calculate-lesson-total", async (req, res) => {
       }
     }
 
+    if(globalAmount != 0){
+      totalRevenue = totalRevenue + globalAmount;
+    }
     
     let refundResults = await stripe.refunds.list({
       created: {
