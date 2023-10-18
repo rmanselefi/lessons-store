@@ -665,7 +665,6 @@ app.get("/calculate-lesson-total", async (req, res) => {
     let tryouts = 0;
     if (globalAmount != 0 && tryouts == 0) {
       totalRevenue = totalRevenue + globalAmount;
-      netRevenue = netRevenue + globalAmount;
       tryouts++;
     }
     // Convert to cents
