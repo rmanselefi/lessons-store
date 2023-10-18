@@ -46,16 +46,7 @@ app.post("/webhook", async (req, res) => {
       const charge = event.data.object; // Get the charge data
 
       const amount = charge.amount; // Get the amount in cents
-      console.log("Amount=======>: ", amount);
       globalAmount = amount; // Assign the amount to the global variable
-
-      const bt = charge.balance_transaction;
-      console.log("bt=======>: ", charge);
-      if (bt != null) {
-        const txn = stripe.balanceTransactions.retrieve(bt);
-        console.log("txn=======>: ", txn);
-        fee = txn.fee;
-      }
     }
 
     res.sendStatus(200); // Respond to the webhook event with a 200 OK status
@@ -619,17 +610,10 @@ app.get("/calculate-lesson-total", async (req, res) => {
     let thirtySixHoursAgo = Math.floor(Date.now() / 1000 - 36 * 60 * 60);
 
     // Fetch successful payments within the last 36 hours
-    let paymentResults = await stripe.charges.list({
-      created: {
-        gte: thirtySixHoursAgo,
-      },
-      limit: 1000,
-    });
-    const successfulCharges = paymentResults.data.filter(
+    let paymentResults = await getAllTransactions();
+    const successfulCharges = paymentResults.filter(
       (intent) => intent.status === "succeeded"
     );
-
-    console.log(successfulCharges.length);
 
     // Calculate total revenue, processing costs, and refund costs
     let totalRevenue = 0;
@@ -667,7 +651,7 @@ app.get("/calculate-lesson-total", async (req, res) => {
     // totalRevenue = 100;
     // processingCosts /= 100;
     // netRevenue /= 100;
-    console.log(totalRevenue, processingCosts, netRevenue);
+
     // Return the results
     return res.json({
       payment_total: totalRevenue,
@@ -683,6 +667,41 @@ app.get("/calculate-lesson-total", async (req, res) => {
     });
   }
 });
+
+async function getAllTransactions() {
+  let thirtySixHoursAgo = Math.floor(Date.now() / 1000 - 36 * 60 * 60);
+  let allTransactions = null;
+  let startingAfter = null;
+
+  while (true) {
+    const options = {
+      created: {
+        gte: thirtySixHoursAgo,
+      },
+      limit: 100, // Adjust the limit as needed
+    };
+
+    if (startingAfter) {
+      options.starting_after = startingAfter;
+    }
+
+    const transactions = await stripe.charges.list(options);
+
+    if (allTransactions === null) {
+      allTransactions = transactions.data;
+    } else {
+      allTransactions = allTransactions.concat(transactions.data);
+    }
+
+    if (!transactions.has_more) {
+      break; // Exit the loop if there are no more pages
+    } else {
+      startingAfter = transactions.data[transactions.data.length - 1].id;
+    }
+  }
+
+  return allTransactions;
+}
 
 // Milestone 4: '/find-customers-with-failed-payments'
 // Returns any customer who meets the following conditions:
